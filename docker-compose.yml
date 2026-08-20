@@ -1,0 +1,27 @@
+services:
+  redis:
+    image: redis:8.10
+    restart: always
+    # An event store is a system of record, so the defaults are wrong for it in
+    # two ways, and RedisEventStorage refuses to start against either:
+    #   appendonly no        — RDB snapshotting alone loses every event since
+    #                          the last snapshot when the process dies.
+    #   maxmemory-policy     — anything but noeviction lets Redis silently drop
+    #                          event streams to reclaim memory.
+    # appendfsync everysec here rather than always: a test suite does not need
+    # to survive a kernel panic, but production does — see docs/ARCHITECTURE.md.
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory-policy
+      - noeviction
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
